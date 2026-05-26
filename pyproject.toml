@@ -1,0 +1,26 @@
+[project]
+name = "visual-banjo"
+version = "0.1.0"
+description = "Real-time banjo note detector"
+readme = "README.md"
+authors = [
+    { name = "William Bell", email = "wjbell97@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "sounddevice>=0.4.6",
+    "numpy>=1.24",
+    "rich>=13.0",
+]
+
+[project.scripts]
+visual-banjo = "visual_banjo.main:main"
+
+[build-system]
+requires = ["uv_build>=0.11.16,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "watchfiles>=1.2.0",
+]
