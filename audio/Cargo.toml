@@ -1,0 +1,9 @@
+[package]
+name = "visual-banjo-audio"
+version = "0.1.0"
+edition = "2021"
+description = "Pitch estimation core for Visual Banjo"
+
+[lib]
+name = "visual_banjo_audio"
+path = "src/lib.rs"
