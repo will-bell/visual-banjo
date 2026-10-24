@@ -1,36 +1,47 @@
 # visual-banjo
 
-A terminal app for real-time banjo note detection. Play a note into your microphone and see the note name, frequency, and how sharp or flat you are.
+A terminal app for exploring banjo music theory and detecting notes from a microphone.
 
 ## Requirements
 
-- macOS (uses the system microphone)
-- [Homebrew](https://brew.sh)
-- [uv](https://docs.astral.sh/uv/) — installed in the setup step below
-- [just](https://just.systems) — installed in the setup step below
+- Python 3.14+
+- [uv](https://docs.astral.sh/uv/)
+- [just](https://just.systems) (optional convenience commands)
+- macOS microphone access for the tuner (the fretboard explorer requires no microphone)
 
 ## Setup
 
 ```bash
-# Install uv and just
-brew install uv just
-
-# Install Python dependencies
 uv sync
 ```
 
-On first run, macOS will show a permission dialog asking for microphone access — allow it.
+On macOS, `brew install uv just` installs the tools. On first tuner use, allow the microphone permission prompt.
 
 ## Running
 
 ```bash
-# Run the app
 just run
+# or: uv run visual-banjo
+```
 
-# Run with auto-reload on source file changes (for development)
+From the menu:
+
+- **1 — Tuner:** detect notes, frequency and intonation from microphone input. Ctrl+C returns to menu.
+- **2 — Fretboard explorer:** choose Open G (`gDGBD`) or Double C (`gCGCD`), then optionally a chord root and major/minor quality. The display covers frets 0–17; chord roots are green, other chord tones yellow, and non-chord tones dimmed. Leave the root blank to show all notes. The fifth string has no positions at frets 0–4: its open G sounds at physical fret 5.
+- **q — Quit.**
+
+When the fretboard explorer is open, enter `q` at the tuning or root prompt to return to the menu. `Ctrl+C` also returns to the menu.
+
+## Tests
+
+```bash
+uv run python -m unittest discover -s tests
+```
+
+## Development
+
+```bash
 just dev
 ```
 
-From the menu, press `1` to open the tuner. Press `Ctrl+C` to return to the menu. Press `Ctrl+C` again (or `q`) to exit.
-
-> In `just dev` mode, `Ctrl+C` stops the file watcher and exits completely.
+See [algorithms.md](algorithms.md) for the music and signal-processing algorithms.
