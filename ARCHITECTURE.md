@@ -1,60 +1,98 @@
-# Architecture: Gleam + Rust
+# Architecture: graphical Visual Banjo (Gleam + Rust)
 
-This is the intended replacement for the original Python prototype. The existing
-Python tuner remains on `main` temporarily for reference; new features should not
-extend it. The Python-only fretboard PR was closed.
+Visual Banjo is an **interactive graphical music-theory explorer**. The terminal
+tuner was an early practical prototype, not the intended application interface.
+Do not extend the Python UI: the Python files on `main` remain only as a
+reference while features are migrated.
 
-## Ownership
+## Initial target: browser application
 
-| Layer | Language | Responsibility |
+| Layer | Technology | Responsibility |
 | --- | --- | --- |
-| Application domain | Gleam | Tuning selection, fretboard positions, scale/chord selection, navigation and immutable application state |
-| Audio engine | Rust | Microphone capture, buffering, DSP, pitch detection, confidence estimation |
-| Boundary | Versioned messages | Rust emits discrete pitch observations; Gleam responds to events, never raw sample buffers |
-| Presentation | To be selected | Rendering follows Gleam state; do not embed theory rules into the view |
+| UI and state | Gleam (JavaScript target) | Model/update loop, tuning/chord/scale choices, interactions, visualization state |
+| Fretboard rendering | SVG in the browser | Interactive strings, frets, note locations, chord tones, later playable shapes |
+| Audio input | Browser Web Audio APIs | Microphone permissions, device input, buffering, sending audio frames for analysis |
+| Pitch estimation | Rust compiled to WebAssembly | DSP and note-frequency/confidence estimation, without UI or music-theory state |
+| Bridge | Typed Gleam events + narrow JS externals | Translate browser microphone/pitch events into application messages |
 
-Gleam compiles to Erlang or JavaScript rather than Rust. A separate Rust process
-with line-delimited JSON messages is the initial recommended integration:
-it keeps crashing or blocking audio code away from the UI runtime and allows
-replaying recorded pitch events during testing. A Rust NIF or native bridge can
-be reconsidered after measuring real latency; neither is necessary for the
-first iteration.
+The browser handles audio capture, while Rust owns the signal-processing
+algorithm. Rust/WASM does **not** directly own the microphone: Web Audio
+provides it. A small JavaScript interop adapter will be necessary for Web
+Audio and for invoking the WASM module. Mic access is optional: the explorer
+must work without microphone permission. The application should work on
+localhost and over HTTPS, where browser microphone permissions are supported.
 
-### Example message
+Start with SVG and semantic UI controls rather than introducing a large
+JavaScript frontend framework. Keep note mapping, chord-tone rules, and
+application state in pure Gleam functions so they are testable separately from
+DOM and Web Audio integrations.
 
-Rust -> Gleam:
+### Conceptual state flow
 
-```json
-{"version":1,"type":"pitch","frequency_hz":392.0,"confidence":0.98}
+```
+User input (tuning, chord, note selection)
+    -> Gleam Msg
+    -> Gleam update(Model, Msg)
+    -> SVG fretboard redraw
+
+Browser microphone (with user permission)
+    -> Web Audio frames
+    -> Rust/WASM pitch estimator
+    -> PitchObserved(frequency, confidence) / PitchLost
+    -> Gleam update(Model, Msg)
+    -> highlight sounding note positions
 ```
 
-The event rate should be throttled for presentation; it is not the audio
-sampling rate. Invalid, silent or low-confidence frames should have an
-explicit no-pitch event instead of retaining the last detected note forever.
+Audio work should not block the UI thread. A production integration should
+use an AudioWorklet for capture and an appropriate worker/processing boundary
+for DSP, then measure latency and CPU usage. Avoid shipping an implementation
+that performs expensive DSP synchronously during rendering.
 
-## Migration slices
+## Initial exploration experience
 
-1. Implement a pure Gleam model for tunings, fret positions and chord tones,
-   with tests independent of any UI or microphone.
-2. Port pitch estimation into an isolated Rust library, with deterministic
-   signal tests; add audio device capture only around that library.
-3. Define and test the line-delimited message protocol and supervise the
-   native process at the application's boundary.
-4. Choose the presentation runtime (terminal versus browser/desktop) and
-   connect it to the Gleam state.
-5. Remove the Python entry point, dependency and lock files once both
-   tunings and microphone detection work end to end.
+- Show the entire five-string fretboard with the short fifth string beginning
+  at physical fret 5; support Open G and Double C tunings.
+- Highlight all locations of a chosen note or chord's pitch classes, with a
+  distinct root marker and optional note-name labels.
+- Make fret positions selectable, with a small inspector showing string,
+  fret, sounding note and interval relative to the selected chord.
+- Keep chord-tone locations separate from *playable chord shapes*, which
+  require explicit fingering/fret-span constraints.
+- Make the microphone tuner a later mode or overlay rather than the top-level
+  application architecture.
+
+## Migration increments
+
+1. **Interactive fretboard, no microphone:** Gleam model/update, browser SVG
+   view, tuning and chord selection, automated tests for note mapping.
+2. **Music-theory exploration:** note/interval inspection, major/minor chords,
+   then shape search with practical fingering constraints.
+3. **Rust audio core:** deterministic sine/noise tests and stable DSP API,
+   building for WebAssembly; avoid tying the DSP crate to an audio device.
+4. **Browser microphone integration:** secure-context permission flow,
+   worklet/worker audio pipeline, pitch/silence event bridge to Gleam.
+5. **Tuner overlay and live fretboard feedback:** calibration, confidence
+   filtering and latency testing.
+6. Remove Python files, dependencies and terminal entry point after the new
+   graphical application provides replacement functionality.
+
+## Portability
+
+A desktop wrapper may be considered later if offline installation or native
+audio access is valuable. It should use the same graphical frontend and
+domain state, not a separate terminal-centered application. Do not build a
+native-process JSON protocol until a concrete desktop requirement calls for it.
 
 ## Non-goals
 
-- No Python-to-Gleam bindings.
-- No Rust ownership of user-facing chord, scale or navigation state.
-- No premature Rust NIF dependency.
-- No assumptions that highlighting chord tones automatically finds
-  playable multi-string chord shapes.
+- No Python dependencies in newly implemented features.
+- No Rust ownership of UI state or chord, scale and navigation rules.
+- No assumption that all highlighted chord tones form playable grips.
+- No microphone requirement merely to explore notes and harmony.
 
 ## References
 
-- Gleam compilation targets: https://gleam.run/documentation/command-line-reference/
-- Gleam externals and interoperability: https://gleam.run/documentation/externals/
-- Gleam OTP actors: https://github.com/gleam-lang/otp
+- Gleam JavaScript target and externals: https://gleam.run/documentation/
+- Web Audio API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+- AudioWorklet: https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet
+- Rust and WebAssembly: https://rustwasm.github.io/docs/book/
