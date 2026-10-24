@@ -76,6 +76,32 @@ that performs expensive DSP synchronously during rendering.
 6. Remove Python files, dependencies and terminal entry point after the new
    graphical application provides replacement functionality.
 
+## Future research: Faust-generated Rust DSP
+
+Investigate [Faust](https://github.com/grame-cncm/faust), a functional DSP
+language, and the [Faust Rust compiler project](https://github.com/grame-cncm/faust-rs)
+as a possible way to express reusable audio-processing components and generate
+Rust for the WebAssembly audio engine. This is a **research direction, not a
+committed dependency or a replacement for the existing Rust estimator**.
+
+Questions for a small proof of concept:
+
+- Which parts of the pipeline (high-pass filters, noise shaping, harmonic
+  analysis, reference-tone generation) are clearer in Faust than handwritten
+  Rust?
+- How complete and stable is the Faust-to-Rust compiler, and does the generated
+  output build cleanly for the `wasm32` target?
+- How does compiled Faust compare against direct Rust for latency, binary
+  size, memory allocation and correctness on recorded banjo samples?
+- Can generated DSP modules remain independent of browser microphone APIs and
+  pass deterministic audio fixtures through Rust tests?
+- Would Faust's direct WebAssembly backend be a more practical fallback while
+  Rust code generation matures?
+
+Keep microphone capture in the browser's Web Audio layer and keep application
+state and music theory in Gleam. Do not introduce Faust into the build until a
+measured prototype justifies its complexity.
+
 ## Portability
 
 A desktop wrapper may be considered later if offline installation or native
