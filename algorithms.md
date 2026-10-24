@@ -86,3 +86,25 @@ The result ranges from −50 to +50 cents before the pitch would round to the ad
 **Primary reference:** Ellis, A.J. (1885). Appendix XX to Helmholtz, H. *On the Sensations of Tone*. Dover reprint 1954. (Original definition of the cent as a unit.)
 
 **Accessible explanation:** https://en.wikipedia.org/wiki/Cent_(music)
+
+---
+
+## Fretboard note mapping (`fretboard.py`)
+
+**Used for:** Displaying note locations in Open G and Double C, including the short fifth string.
+
+Each fret raises a pitch by one equal-tempered semitone. For the four long strings, the sounding MIDI pitch is the open-string MIDI pitch plus the physical fret number. The short fifth string begins at *physical fret 5*, where its open pitch is G4; positions 0–4 are absent and fret 6 raises it to G#4. Pitch names are obtained using MIDI pitch modulo 12.
+
+**Primary reference:** Earl Scruggs, *Earl Scruggs and the 5-String Banjo*, revised edition (2005), banjo tuning and fifth-string setup.
+
+**Accessible explanation:** https://en.wikipedia.org/wiki/Five-string_banjo
+
+### Chord tone highlighting
+
+**Used for:** Coloring every major or minor triad tone on the fretboard.
+
+Major triads use pitch-class offsets 0, 4 and 7 semitones above their root; minor triads use 0, 3 and 7. Octaves do not change chord membership. This marks *potential tones*, not complete fingerable chord grips, which will require separate fingering constraints.
+
+**Primary reference:** Kostka, Payne & Almén, *Tonal Harmony*, 8th edition, chapters on triads.
+
+**Accessible explanation:** https://en.wikipedia.org/wiki/Triad_(music)
